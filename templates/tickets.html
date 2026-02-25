@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>X-Kernel | Tickets</title>
+  <style>
+    body { background:#020617; color:#e5e7eb; font-family:system-ui; padding:20px; }
+    h1 { margin-bottom:12px; }
+    table { width:100%; border-collapse:collapse; background:#020617; }
+    th, td { padding:8px 10px; border-bottom:1px solid #1f2937; font-size:13px; }
+    th { text-align:left; color:#9ca3af; }
+    tr:nth-child(even){ background:#020617; }
+    .used { color:#facc15; }
+    .valid { color:#22c55e; }
+    a { color:#38bdf8; text-decoration:none; font-size:13px; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <h1>All Tickets</h1>
+  <p><a href="/">← Back to ticket console</a></p>
+  <table>
+    <thead>
+    <tr>
+      <th>Ticket ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Event</th>
+      <th>Phone</th>
+      <th>Status</th>
+      <th>Scanned At</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for t in tickets %}
+      <tr>
+        <td>{{ t.ticket_id }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.email }}</td>
+        <td>{{ t.event }}</td>
+        <td>{{ t.phone }}</td>
+        <td>
+          {% if t.used %}
+            <span class="used">Used</span>
+          {% else %}
+            <span class="valid">Not used</span>
+          {% endif %}
+        </td>
+        <td>{{ t.scanned_at or '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
