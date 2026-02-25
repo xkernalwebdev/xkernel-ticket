@@ -11,4 +11,4 @@ WTForms==3.1.1
 gunicorn==21.2.0
 certifi==2025.7.14
 email-validator==2.3.0
-sib_api_v3_sdk==8.0.1
+sib_api_v3_sdk==7.6.0
