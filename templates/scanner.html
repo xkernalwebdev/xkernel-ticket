@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>X-Kernel | QR Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #020617;
+            --panel: #020617;
+            --card: #0f172a;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.18);
+            --valid: #22c55e;
+            --invalid: #ef4444;
+            --used: #eab308;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: #1f2937;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #1e293b, #020617 55%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 12px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 860px) {
+            .container {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .panel {
+            background: rgba(2, 6, 23, 0.96);
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            padding: 20px 18px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #020617;
+            border: 1px solid var(--accent-soft);
+            color: var(--accent);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .title {
+            margin-top: 10px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            margin-top: 4px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        #reader {
+            width: 100%;
+            max-width: 520px;
+            margin-top: 16px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status-card {
+            background: #020617;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 14px 14px 12px;
+            min-height: 120px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .status-pill span.dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .status-pill.idle {
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--muted);
+        }
+
+        .status-pill.valid {
+            background: rgba(34, 197, 94, 0.12);
+            color: var(--valid);
+        }
+
+        .status-pill.invalid {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--invalid);
+        }
+
+        .status-pill.used {
+            background: rgba(234, 179, 8, 0.12);
+            color: var(--used);
+        }
+
+        .details {
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .details span.label {
+            color: var(--muted);
+        }
+
+        .details span.value {
+            color: var(--text);
+        }
+
+        .details-row {
+            margin-top: 2px;
+        }
+
+        .hint-card {
+            background: #020617;
+            border-radius: 16px;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            padding: 12px 14px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .hint-card ul {
+            padding-left: 16px;
+            margin-top: 4px;
+        }
+
+        .hint-card li {
+            margin: 2px 0;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Left: Scanner -->
+    <div class="panel">
+        <div class="header">
+            <div class="badge">
+                <span>●</span><span>X-Kernel Scanner</span>
+            </div>
+            <h1 class="title">Event Entry Scanner</h1>
+            <p class="subtitle">Point the camera at the ticket QR. The system will validate and mark attendance automatically.</p>
+        </div>
+
+        <div id="reader"></div>
+
+        <a href="/" class="back-link">
+            ← Back to ticket console
+        </a>
+    </div>
+
+    <!-- Right: Status / Info -->
+    <div class="panel info-panel">
+        <div class="status-card">
+            <div class="status-label">Current status</div>
+            <div id="status-pill" class="status-pill idle">
+                <span class="dot"></span>
+                <span id="status-text">Waiting for QR...</span>
+            </div>
+
+            <div class="details">
+                <div class="details-row">
+                    <span class="label">Name:</span>
+                    <span class="value" id="detail-name">—</span>
+                </div>
+                <div class="details-row">
+                    <span class="label">Event:</span>
+                    <span class="value" id="detail-event">—</span>
+                </div>
+                <div class="details-row">
+                    <span class="label">Ticket ID:</span>
+                    <span class="value" id="detail-ticket">—</span>
+                </div>
+                <div class="details-row">
+                    <span class="label">Extra:</span>
+                    <span class="value" id="detail-extra">Scan a code to see result.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hint-card">
+            <strong>Tips for organizers</strong>
+            <ul>
+                <li>Use the rear camera on phones for faster focus.</li>
+                <li>If a ticket shows “Already Used”, ask the guest to show ID.</li>
+                <li>Weak internet may delay verification; wait for status update.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+</body>
+</html>
