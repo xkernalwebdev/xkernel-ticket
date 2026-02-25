@@ -1,43 +1,43 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# # Byte-compiled / optimized / DLL files
+# __pycache__/
+# *.py[cod]
+# *$py.class
 
-# Virtual environments
-venv/
-.env/
-.venv/
-env/
-venv.bak/
+# # Virtual environments
+# venv/
+# .env/
+# .venv/
+# env/
+# venv.bak/
 
-# Environment / secrets
-*.env
-.env.*
-config.ini
+# # Environment / secrets
+# *.env
+# .env.*
+# config.ini
 
-# VS Code / IDE
-.vscode/
-.idea/
-*.swp
+# # VS Code / IDE
+# .vscode/
+# .idea/
+# *.swp
 
-# OS files
-.DS_Store
-Thumbs.db
+# # OS files
+# .DS_Store
+# Thumbs.db
 
-# Logs
-*.log
+# # Logs
+# *.log
 
-# Jupyter
-.ipynb_checkpoints/
+# # Jupyter
+# .ipynb_checkpoints/
 
-# Python packaging
-build/
-dist/
-*.egg-info/
+# # Python packaging
+# build/
+# dist/
+# *.egg-info/
 
-# Local data folders
-uploads/
-qrcodes/
+# # Local data folders
+# uploads/
+# qrcodes/
 
-# Render / deployment
-*.sqlite3
+# # Render / deployment
+# *.sqlite3
