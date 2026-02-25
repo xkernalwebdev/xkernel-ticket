@@ -36,28 +36,61 @@ class ManualTicketForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Email()])
     event = StringField("Event", validators=[DataRequired()])
     phone = StringField("Phone")
-    submit = SubmitField("Generate")
+    submit = SubmitField("Generate Ticket")
 
 
 def allowed_file(name):
     return "." in name and name.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# 🎫 TICKET DESIGN (like your sample)
 def create_ticket(tid, name, event, data, path):
-    qr = qrcode.make(data).resize((250, 250))
-    img = Image.new("RGB", (900, 350), "#020617")
-    img.paste(qr, (600, 50))
+    bg = "#020617"
+    accent = "#38bdf8"
+    main = "#e5e7eb"
+    muted = "#94a3b8"
 
+    qr = qrcode.make(data).resize((260, 260))
+
+    w, h = 900, 350
+    img = Image.new("RGB", (w, h), bg)
     draw = ImageDraw.Draw(img)
-    font = ImageFont.load_default()
 
-    draw.text((40, 90), f"Name: {name}", fill="white", font=font)
-    draw.text((40, 140), f"Event: {event}", fill="white", font=font)
-    draw.text((40, 190), f"Ticket: {tid}", fill="white", font=font)
+    draw.rounded_rectangle([20, 20, w-20, h-20], 25, fill=bg)
+    draw.rectangle([20, 20, 30, h-20], fill=accent)
+
+    try:
+        title = ImageFont.truetype("arialbd.ttf", 32)
+        label = ImageFont.truetype("arial.ttf", 18)
+        value = ImageFont.truetype("arial.ttf", 20)
+        small = ImageFont.truetype("arial.ttf", 14)
+    except:
+        title = label = value = small = ImageFont.load_default()
+
+    draw.text((60, 45), "Event Access Pass", fill=main, font=title)
+
+    y = 110
+    draw.text((60, y), "Name", fill=muted, font=label)
+    draw.text((200, y), name, fill=main, font=value)
+
+    y += 45
+    draw.text((60, y), "Event", fill=muted, font=label)
+    draw.text((200, y), event, fill=main, font=value)
+
+    y += 45
+    draw.text((60, y), "Ticket ID", fill=muted, font=label)
+    draw.text((200, y), tid, fill=main, font=value)
+
+    footer = "Show this pass at entry • QR is mandatory • Issued by X-Kernel Web Dev Team"
+    draw.text((60, h-50), footer, fill=muted, font=small)
+
+    img.paste(qr, (w-320, 50))
+    draw.text((w-260, 320), "Scan at gate", fill=muted, font=small)
 
     img.save(path)
 
 
+# 📧 BREVO EMAIL
 def send_brevo_email(to_email, name, tid, qr_path, event):
     try:
         config = sib_api_v3_sdk.Configuration()
@@ -89,7 +122,6 @@ def send_brevo_email(to_email, name, tid, qr_path, event):
         )
 
         api.send_transac_email(email)
-        print("BREVO EMAIL SENT")
 
     except Exception as e:
         print("BREVO ERROR:", e)
@@ -115,20 +147,13 @@ def home():
         path = os.path.join(QR_FOLDER, f"{tid}.png")
         create_ticket(tid, form.name.data, form.event.data, f"TICKET:{tid}", path)
 
-        send_brevo_email(
-            form.email.data,
-            form.name.data,
-            tid,
-            path,
-            form.event.data
-        )
+        send_brevo_email(form.email.data, form.name.data, tid, path, form.event.data)
 
-        flash("Ticket generated and emailed!")
+        flash("Ticket generated & emailed!")
         return redirect(url_for("home"))
 
     if "file" in request.files:
         file = request.files["file"]
-
         if allowed_file(file.filename):
             path = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
             file.save(path)
@@ -160,7 +185,7 @@ def home():
                 )
 
             os.remove(path)
-            flash("Excel processed and tickets sent!")
+            flash("Excel processed & tickets sent!")
 
     return render_template("upload.html", form=form)
 
@@ -170,6 +195,7 @@ def scanner():
     return render_template("scanner.html")
 
 
+# ✅ SMART VERIFY (shows already verified instead of invalid)
 @app.route("/verify", methods=["POST"])
 def verify():
     data = request.json.get("ticket_data", "")
@@ -178,17 +204,33 @@ def verify():
     ticket = tickets.find_one({"ticket_id": tid})
 
     if not ticket:
-        return jsonify({"valid": False})
+        return jsonify({"valid": False, "message": "Ticket not found"})
 
     if ticket["used"]:
-        return jsonify({"valid": False, "msg": "Already used"})
+        return jsonify({
+            "valid": True,
+            "status": "already_verified",
+            "name": ticket["name"],
+            "event": ticket["event"],
+            "ticket_id": ticket["ticket_id"],
+            "verified_at": ticket["scanned_at"]
+        })
+
+    time_now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
     tickets.update_one(
         {"ticket_id": tid},
-        {"$set": {"used": True, "scanned_at": datetime.utcnow()}}
+        {"$set": {"used": True, "scanned_at": time_now}}
     )
 
-    return jsonify({"valid": True})
+    return jsonify({
+        "valid": True,
+        "status": "verified_now",
+        "name": ticket["name"],
+        "event": ticket["event"],
+        "ticket_id": tid,
+        "verified_at": time_now
+    })
 
 
 @app.route("/report/download")
