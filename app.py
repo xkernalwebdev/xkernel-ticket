@@ -13,6 +13,7 @@ import os, uuid
 from config import Config
 import certifi
 from datetime import datetime
+import pandas as pd  # for Excel
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,8 +23,12 @@ client = MongoClient(app.config['MONGO_URI'], tlsCAFile=certifi.where())
 db = client.event_tickets
 tickets = db.tickets
 
+UPLOAD_FOLDER = 'uploads'
 QR_FOLDER = 'qrcodes'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QR_FOLDER, exist_ok=True)
+
+ALLOWED_EXTENSIONS = {'xlsx'}
 
 
 class ManualTicketForm(FlaskForm):
@@ -32,6 +37,10 @@ class ManualTicketForm(FlaskForm):
     event = StringField('Event Name', validators=[DataRequired()])
     phone = StringField('Phone', validators=[Length(min=10)])
     submit = SubmitField('Generate Ticket')
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def create_ticket_image(ticket_id, name, event, qr_data, save_path):
@@ -108,7 +117,7 @@ X-Kernel Team
         msg.attach(img)
 
     try:
-        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'])
+        server = smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'], timeout=20)
         server.starttls()
         server.login(app.config['EMAIL_USER'], app.config['EMAIL_PASS'])
         server.send_message(msg)
@@ -121,6 +130,7 @@ X-Kernel Team
 def home():
     form = ManualTicketForm()
 
+    # Manual ticket generate
     if form.validate_on_submit():
         ticket_id = str(uuid.uuid4())[:8].upper()
 
@@ -130,6 +140,8 @@ def home():
             'email': form.email.data,
             'event': form.event.data,
             'phone': form.phone.data or '',
+            'branch': None,
+            'roll_number': None,
             'used': False,
             'scanned_at': None
         })
@@ -143,6 +155,57 @@ def home():
         flash(f'Ticket {ticket_id} generated and emailed!')
         return redirect(url_for('home'))
 
+    # Excel upload for bulk tickets
+    if 'file' in request.files:
+        file = request.files['file']
+        if file.filename and allowed_file(file.filename):
+            path = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(path)
+
+            try:
+                df = pd.read_excel(path)
+
+                required_cols = ['Name', 'Branch', 'Roll Number', 'Event', 'Mail']
+                if not all(col in df.columns for col in required_cols):
+                    flash('Excel must have columns: Name, Branch, Roll Number, Event, Mail')
+                    return redirect(url_for('home'))
+
+                for _, row in df.iterrows():
+                    ticket_id = str(uuid.uuid4())[:8].upper()
+
+                    name = str(row['Name']).strip()
+                    branch = str(row['Branch']).strip() if pd.notna(row['Branch']) else ''
+                    roll_number = str(row['Roll Number']).strip() if pd.notna(row['Roll Number']) else ''
+                    event_name = str(row['Event']).strip()
+                    email_addr = str(row['Mail']).strip()
+
+                    tickets.insert_one({
+                        'ticket_id': ticket_id,
+                        'name': name,
+                        'email': email_addr,
+                        'event': event_name,
+                        'phone': '',
+                        'branch': branch,
+                        'roll_number': roll_number,
+                        'used': False,
+                        'scanned_at': None
+                    })
+
+                    qr_data = f"TICKET:{ticket_id}:{event_name}"
+                    qr_path = os.path.join(QR_FOLDER, f"{ticket_id}.png")
+                    create_ticket_image(ticket_id, name, event_name, qr_data, qr_path)
+
+                    send_ticket_email(email_addr, name, ticket_id, qr_path, event_name)
+
+                flash('Excel tickets generated and emailed!')
+            except Exception as e:
+                flash(f'Error processing Excel: {e}')
+            finally:
+                if os.path.exists(path):
+                    os.remove(path)
+
+            return redirect(url_for('home'))
+
     return render_template('upload.html', form=form)
 
 
@@ -155,6 +218,11 @@ def scanner():
 def tickets_page():
     all_tickets = list(tickets.find().sort('_id', -1))
     return render_template('tickets.html', tickets=all_tickets)
+
+@app.route('/report')
+def report_page():
+    all_tickets = list(tickets.find().sort('_id', -1))
+    return render_template('report.html', tickets=all_tickets)
 
 
 @app.route('/verify', methods=['POST'])

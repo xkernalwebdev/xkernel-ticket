@@ -1,8 +1,60 @@
 <!DOCTYPE html>
-<html>
-<head><title>Attendance Report</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance & Reports</title>
+  <style>
+    body { background:#020617; color:#e5e7eb; font-family:system-ui; padding:20px; }
+    h1 { margin-bottom:4px; }
+    p { color:#9ca3af; margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+    th, td { padding:8px 10px; border-bottom:1px solid #1f2937; text-align:left; }
+    th { color:#9ca3af; }
+    tr:nth-child(even){ background:#020617; }
+    .used { color:#22c55e; }
+    .notused { color:#f97316; }
+    a { color:#38bdf8; text-decoration:none; font-size:13px; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
 <body>
-  <h1>Attendance Report</h1>
-  <a href="/report/download">Download Excel</a>
+  <h1>Attendance & Reports</h1>
+  <p>All registered students with their attendance status.</p>
+  <p><a href="{{ url_for('home') }}">← Back to console</a></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ticket ID</th>
+        <th>Name</th>
+        <th>Branch</th>
+        <th>Roll No</th>
+        <th>Email</th>
+        <th>Event</th>
+        <th>Status</th>
+        <th>Scanned At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+        <tr>
+          <td>{{ t.ticket_id }}</td>
+          <td>{{ t.name }}</td>
+          <td>{{ t.branch or '—' }}</td>
+          <td>{{ t.roll_number or '—' }}</td>
+          <td>{{ t.email }}</td>
+          <td>{{ t.event }}</td>
+          <td>
+            {% if t.used %}
+              <span class="used">Attended</span>
+            {% else %}
+              <span class="notused">Not attended</span>
+            {% endif %}
+          </td>
+          <td>{{ t.scanned_at or '—' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </body>
 </html>
